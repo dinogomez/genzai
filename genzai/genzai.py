@@ -1,4 +1,4 @@
-# @1.0.0
+# @1.0.1
 # @name: Genzai!
 # @author: Dino Paulo R. Gomez 2024
 
