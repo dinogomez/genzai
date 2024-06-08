@@ -7,9 +7,9 @@ A lightweight Discord custom Rich Presence manager that runs on Linux and Window
 <p align="center">
 <img src="https://github.com/dinogomez/genzai/assets/41871666/0d384431-5226-491f-baca-8a1c075b06ce">
 
-## Download
+# Download
 
-### Latest
+### Latest [DOWNLOAD HERE](https://github.com/dinogomez/genzai/releases/tag/Latest)
 
 The latest official release of Genzai is available for both Linux and Windows. Check the [Genzai Latest Release](https://github.com/dinogomez/genzai/releases/tag/Latest).
 
@@ -18,12 +18,14 @@ The latest official release of Genzai is available for both Linux and Windows. C
 
 ## How to use Genzai?
 
-1. Make a new Discord application [here](https://discord.com/developers/applications).
-2. Copy the `Client ID` and paste it in the `Client ID` field in Genzai.
-3. Click `Connect`
-4. Fill out the fields you want.
-5. Click `Update`
-6. Enjoy your new Discord Rich Presence!
+1. Make a new Discord application, here in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Click `New Application` on the top right.
+3. Create your application name, this will be your `title` in your Discord Presence.
+4. Copy the `Application ID` and paste it in the `App ID` field in Genzai.
+5. Click `Connect`
+6. Fill out the fields you want.
+7. Click `Update`
+8. Enjoy your new Discord Rich Presence!
 
 ## How to build Genzai from source
 

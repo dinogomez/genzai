@@ -27,7 +27,8 @@ CONFIG = {
     "APP_ICON": "assets/icon.png",
     "APP_LOGO": "assets/logo.png",
     "APP_GEOMETRY": "520x480",
-    "APP_RESIZABLE": False,
+    "APP_RESIZABLE_X": False,
+    "APP_RESIZABLE_Y": False,
     "APP_DIMENSION": "520x480",
 }
 
@@ -36,7 +37,8 @@ STYLE = {
     "NORMAL": "#2fa572",
     "DISABLED": "#0e5637",
     "ENTRY": "#343638",
-    "ENTRY_DISABLED": "#28292a"
+    "ENTRY_DISABLED": "#28292a",
+    "ERROR": "red"
 }
 
 
@@ -61,9 +63,9 @@ class DiscordRPC:
     def __init__(self):
         self.RPC = Presence(None)
 
-    def connect(self, client_id):
+    def connect(self, app_id):
         try:
-            self.RPC = Presence(client_id)
+            self.RPC = Presence(app_id)
             self.RPC.connect()
             self.RPC.update(state="Launching Genzai 🚀",
                             details="A user is preparing his presence.", start=int(time.time()))
@@ -102,22 +104,23 @@ class App(ctk.CTk):
 
         # App Configs
         ctk.set_default_color_theme("green")
+        ctk.set_appearance_mode("dark")
         self.title(CONFIG["APP_TITLE"])
         self.geometry(CONFIG["APP_DIMENSION"])
-        self.resizable(False, False)
+        self.resizable(CONFIG["APP_RESIZABLE_X"], CONFIG["APP_RESIZABLE_Y"])
 
         # App Main Frame [Frame]
         self.frame = ctk.CTkFrame(master=self)
         self.frame.grid_columnconfigure((0, 1), weight=1)
         self.frame.pack(padx=10, pady=10, fill="x")
 
-        # Client ID [Label,Entry]@Grid
-        self.label_client_id = ctk.CTkLabel(
-            self.frame, text="Client ID", font=("Consolas", 12))
-        self.label_client_id.grid(row=0, column=0, padx=5, pady=5)
+        # App [Label,Entry]@Grid
+        self.label_app_id = ctk.CTkLabel(
+            self.frame, text="App ID", font=("Consolas", 12))
+        self.label_app_id.grid(row=0, column=0, padx=5, pady=5)
 
-        self.entry_client_id = ctk.CTkEntry(self.frame)
-        self.entry_client_id.grid(
+        self.entry_app_id = ctk.CTkEntry(self.frame)
+        self.entry_app_id.grid(
             row=0, column=1, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Connect [Button:connect()]@Grid
@@ -140,13 +143,13 @@ class App(ctk.CTk):
             row=1, column=1, columnspan=5, padx=5, pady=5, sticky="ew")
 
         # Party State [Label, Entry]@Grid
-        self.label_state = ctk.CTkLabel(
+        self.label_party_state = ctk.CTkLabel(
             self.frame, text="State", font=("Consolas", 12))
-        self.label_state.grid(row=2, column=0, padx=5, pady=5)
+        self.label_party_state.grid(row=2, column=0, padx=5, pady=5)
 
-        self.entry_state = ctk.CTkEntry(self.frame)
-        self.entry_state.grid(row=2, column=1, columnspan=2,
-                              padx=5, pady=5, sticky="we")
+        self.entry_party_state = ctk.CTkEntry(self.frame)
+        self.entry_party_state.grid(row=2, column=1, columnspan=2,
+                                    padx=5, pady=5, sticky="we")
 
         # Party [Label]@Grid
         self.label_party = ctk.CTkLabel(
@@ -295,9 +298,9 @@ class App(ctk.CTk):
         self.label_connection_state.pack(padx=15, pady=(0, 5), side="right")
 
         # Error State [Label]@Pack
-        self.label_error_state = ctk.CTkLabel(
-            master=self, text="", text_color="red", font=("Consolas", 12),)
-        self.label_error_state.pack(pady=(0, 5), padx=15, side="left")
+        self.label_app_state = ctk.CTkLabel(
+            master=self, text="", font=("Consolas", 12),)
+        self.label_app_state.pack(pady=(0, 5), padx=15, side="left")
 
         # Vars
         self.isConnected = False
@@ -305,7 +308,7 @@ class App(ctk.CTk):
     def update(self):
 
         # Reset any existing error message
-        self.set_error("")
+        self.set_app_label("")
 
         # Init
         self.timestamp = ""
@@ -313,7 +316,7 @@ class App(ctk.CTk):
 
         # Fetch the values from the entries
         self.details = self.entry_details.get()
-        self.party_state = self.entry_state.get()
+        self.party_state = self.entry_party_state.get()
         self.party_min = self.entry_party_min.get()
         self.party_max = self.entry_party_max.get()
         self.large_img_url = self.entry_large_image_url.get()
@@ -326,23 +329,31 @@ class App(ctk.CTk):
         self.button_two_url = self.entry_button_two_url.get()
 
         # Validate required fields for minimum length
-        if self.validate_and_set_error(self.invalid_length(value=self.details), "Details needs 2 or more characters."):
+        if self.validate_and_set_app_label(self.invalid_length(value=self.details), "Details needs 2 or more characters."):
             return
-        if self.validate_and_set_error(self.invalid_length(value=self.party_state), "Party State needs 2 or more characters."):
+        if self.validate_and_set_app_label(self.invalid_length(value=self.party_state), "Party State needs 2 or more characters."):
             return
-        if self.validate_and_set_error(self.invalid_length(value=self.large_img_txt), "Large Image Text needs 2 or more characters."):
+        if self.validate_and_set_app_label(self.invalid_length(value=self.large_img_txt), "Large Image Text needs 2 or more characters."):
             return
-        if self.validate_and_set_error(self.invalid_length(value=self.small_img_txt), "Small Image Text needs 2 or more characters."):
+        if self.validate_and_set_app_label(self.invalid_length(value=self.small_img_txt), "Small Image Text needs 2 or more characters."):
             return
 
         # Validate party settings
         if self.party_min:
-            if self.validate_and_set_error(not self.party_state, "Party number needs a state."):
+            if self.validate_and_set_app_label(not self.party_state, "Party number needs a state."):
                 return
-            if self.validate_and_set_error(not self.party_max, "Max is required."):
+            if self.validate_and_set_app_label(not self.party_max, "Max is required."):
                 return
-            if self.validate_and_set_error(int(self.party_min) > int(self.party_max), "Min must not exceed Max"):
+            if self.validate_and_set_app_label(int(self.party_min) > int(self.party_max), "Min must not exceed Max"):
                 return
+
+        # Validate large image settings
+        if self.validate_and_set_app_label(self.large_img_url and not self.large_img_txt, "Large Image URL requires Large Image Text."):
+            return
+
+        # Validate small image settings
+        if self.validate_and_set_app_label(self.small_img_url and not self.small_img_txt, "Small Image URL requires Small Image Text."):
+            return
 
         # Validate button settings
         if self.button_one_url:
@@ -350,7 +361,7 @@ class App(ctk.CTk):
                 self.buttons.append(
                     {"url": self.button_one_url, "label": self.button_one_txt})
             else:
-                self.set_error("Button 1 needs a label.")
+                self.set_app_label("Button 1 needs a label.")
                 return
 
         if self.button_two_url:
@@ -358,7 +369,7 @@ class App(ctk.CTk):
                 self.buttons.append(
                     {"url": self.button_two_url, "label": self.button_two_txt})
             else:
-                self.set_error("Button 2 needs a label.")
+                self.set_app_label("Button 2 needs a label.")
                 return
 
         # Parse custom timestamp if selected in combobox
@@ -371,7 +382,7 @@ class App(ctk.CTk):
                         custom_timestamp, "%B %d, %Y %I:%M:%S %p")
                     self.selected_timestamp = int(time.mktime(dt.timetuple()))
                 except ValueError:
-                    self.set_error("Invalid custom timestamp.")
+                    self.set_app_label("Invalid custom timestamp.")
                     return
 
         # Validate URLs
@@ -384,7 +395,7 @@ class App(ctk.CTk):
 
         for field_name, url in urls_to_validate.items():
             if url and not is_valid_url(url):
-                self.set_error(f"Invalid {field_name}.")
+                self.set_app_label(f"Invalid {field_name}.")
                 return
 
         # Prepare data for updating presence if connected
@@ -411,17 +422,18 @@ class App(ctk.CTk):
                 # Call the update on the discord RPC
                 self.discord_rpc.update_presence(**update_kwargs)
                 self.update_timestamp = datetime.now().timestamp()
+                self.set_app_label("Presence Updated", "white")
 
     def connect(self):
-        # Retrieve the client ID entered by the user
-        self.client_id = self.entry_client_id.get()
+        # Retrieve the Application ID entered by the user
+        self.app_id = self.entry_app_id.get()
 
-        # Validate the client ID; if invalid, display an error and return
-        if self.validate_and_set_error(not self.client_id, "Client ID is required."):
+        # Validate the Application ID; if invalid, display an error and return
+        if self.validate_and_set_app_label(not self.app_id, "Application ID is required."):
             return
 
-        # Attempt to connect to the Discord RPC with the provided client ID
-        success, res = self.discord_rpc.connect(self.client_id)
+        # Attempt to connect to the Discord RPC with the provided Application ID
+        success, res = self.discord_rpc.connect(self.app_id)
 
         if success:
             # If connection is successful, update the connection state
@@ -434,10 +446,10 @@ class App(ctk.CTk):
             self.button_update.configure(
                 state="normal", fg_color=STYLE["NORMAL"])
             # Clear any previous error messages
-            self.set_error("")
+            self.set_app_label("")
         else:
             # If connection fails, display the error message
-            self.set_error(f"Connection Failed. {res.message}")
+            self.set_app_label(f"Connection Failed. {res.message}")
 
     def disconnect(self):
         # Check if already disconnected
@@ -457,7 +469,7 @@ class App(ctk.CTk):
             self.button_update.configure(
                 state="disabled", fg_color=STYLE["DISABLED"])
             # Clear any existing error messages
-            self.set_error("")
+            self.set_app_label("")
 
     def combobox_timestamp_callback(self, choice):
         # Disable the custom timestamp entry field if the selected choice is not the custom option
@@ -487,15 +499,16 @@ class App(ctk.CTk):
                     "%B %d, %Y %I:%M:%S %p")  # Set placeholder to current time
             )
 
-    def set_error(self, msg):
+    def set_app_label(self, msg, color=STYLE["ERROR"]):
         # Display an error message in the label
-        self.label_error_state.configure(
-            text=msg)
+        self.label_app_state
+        self.label_app_state.configure(
+            text=msg, text_color=color)
 
-    def validate_and_set_error(self, condition, error_message):
+    def validate_and_set_app_label(self, condition, error_message):
         # Set error message if condition is true and return True, otherwise return False
         if condition:
-            self.set_error(error_message)
+            self.set_app_label(error_message)
             return True
         return False
 
