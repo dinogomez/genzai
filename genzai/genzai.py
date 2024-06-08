@@ -407,13 +407,18 @@ class App(ctk.CTk):
                 self.update_timestamp = datetime.now().timestamp()
 
     def connect(self):
+        # Retrieve the client ID entered by the user
         self.client_id = self.entry_client_id.get()
 
+        # Validate the client ID; if invalid, display an error and return
         if self.validate_and_set_error(not self.client_id, "Client ID is required."):
             return
 
+        # Attempt to connect to the Discord RPC with the provided client ID
         success, res = self.discord_rpc.connect(self.client_id)
+
         if success:
+            # If connection is successful, update the connection state
             self.isConnected = True
             self.label_connection_state.configure(text="Connected")
             self.button_connect.configure(
@@ -422,16 +427,22 @@ class App(ctk.CTk):
                 state="normal", fg_color=STYLE["NORMAL"])
             self.button_update.configure(
                 state="normal", fg_color=STYLE["NORMAL"])
+            # Clear any previous error messages
             self.set_error("")
         else:
+            # If connection fails, display the error message
             self.set_error(f"Connection Failed. {res.message}")
 
     def disconnect(self):
+        # Check if already disconnected
         if not self.isConnected:
             return
 
+        # Attempt to disconnect from Discord RPC
         if self.discord_rpc.disconnect():
+            # Update connection status
             self.isConnected = False
+            # Update UI elements to reflect disconnection
             self.label_connection_state.configure(text="Disconnected")
             self.button_connect.configure(
                 state="normal", fg_color=STYLE["NORMAL"])
@@ -439,40 +450,51 @@ class App(ctk.CTk):
                 state="disabled", fg_color=STYLE["DISABLED"])
             self.button_update.configure(
                 state="disabled", fg_color=STYLE["DISABLED"])
+            # Clear any existing error messages
             self.set_error("")
 
     def combobox_timestamp_callback(self, choice):
+        # Disable the custom timestamp entry field if the selected choice is not the custom option
         if choice != self.timestamp_list[4]:
             self.entry_custom_timestamp.configure(
                 state="disabled", fg_color=STYLE["ENTRY"])
 
+        # Map the dropdown choices to corresponding timestamps
         timestamp_map = {
-            self.timestamp_list[1]: self.start_time,
+            self.timestamp_list[1]: self.start_time,  # Set to start time
+            # Set to update timestamp
             self.timestamp_list[2]: self.update_timestamp,
+            # Set to current time
             self.timestamp_list[3]: datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            self.timestamp_list[0]: None
+            self.timestamp_list[0]: None  # No timestamp
         }
 
+        # Set the selected_timestamp based on the mapped value of the chosen option
         if choice in timestamp_map:
             self.selected_timestamp = timestamp_map[choice]
+        # Enable the custom timestamp entry field if the selected choice is the custom option
         elif choice == self.timestamp_list[4]:
             self.entry_custom_timestamp.configure(
                 state="normal",
                 fg_color=STYLE["ENTRY"],
-                placeholder_text=datetime.now().strftime("%B %d, %Y %I:%M:%S %p")
+                placeholder_text=datetime.now().strftime(
+                    "%B %d, %Y %I:%M:%S %p")  # Set placeholder to current time
             )
 
     def set_error(self, msg):
+        # Display an error message in the label
         self.label_error_state.configure(
             text=msg)
 
     def validate_and_set_error(self, condition, error_message):
+        # Set error message if condition is true and return True, otherwise return False
         if condition:
             self.set_error(error_message)
             return True
         return False
 
     def validate_integer(self, P):
+        # Check if the input string P is a valid non-negative integer
         if P == "":
             return True
         try:
@@ -482,6 +504,7 @@ class App(ctk.CTk):
             return False
 
     def invalid_length(self, value):
+        # Check if the length of the input string value is exactly 1
         return len(value) == 1
 
 
