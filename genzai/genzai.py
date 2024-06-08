@@ -8,6 +8,7 @@ from datetime import datetime
 import time
 import sys
 import os
+from urllib.parse import urlparse
 
 # Dont really understand why, but it increases the render speed.
 # Caught ibus to be getting most of the cpu% so quick read
@@ -15,7 +16,6 @@ import os
 
 # disable input methods to improve speed
 # @https://github.com/ibus/ibus/issues/2324#issuecomment-996449177
-
 os.environ['XMODIFIERS'] = "@im=none"
 
 # App Constants
@@ -33,17 +33,24 @@ STYLE = {
     "ENTRY_DISABLED": "#28292a"
 }
 
+
 # Retrieves assets relpath
-
-
 def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(
         os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
+
+# Checks for URL pattern
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+
 # Discord Presence provided by pypresence
-
-
 class DiscordRPC:
     def __init__(self):
         self.RPC = Presence(None)
@@ -291,13 +298,18 @@ class App(ctk.CTk):
 
     def update(self):
 
-        self.label_error_state.configure(text="")
+        # Reset any existing error message
+        self.set_error("")
 
+        # Init
+        self.timestamp = ""
+        self.buttons = []
+
+        # Fetch the values from the entries
         self.details = self.entry_details.get()
         self.party_state = self.entry_state.get()
         self.party_min = self.entry_party_min.get()
         self.party_max = self.entry_party_max.get()
-        self.timestamp = ""
         self.large_img_url = self.entry_large_image_url.get()
         self.large_img_txt = self.entry_large_image_text.get()
         self.small_img_url = self.entry_small_image_url.get()
@@ -306,58 +318,44 @@ class App(ctk.CTk):
         self.button_one_url = self.entry_button_one_url.get()
         self.button_two_txt = self.entry_button_two_text.get()
         self.button_two_url = self.entry_button_two_url.get()
-        self.buttons = []
 
-        if self.invalid_length(value=self.details):
-            self.label_error_state.configure(
-                text="Details needs 2 or more characters.")
+        # Validate required fields for minimum length
+        if self.validate_and_set_error(self.invalid_length(value=self.details), "Details needs 2 or more characters."):
             return
-        if self.invalid_length(value=self.party_state):
-            self.label_error_state.configure(
-                text="Party State needs 2 or more characters.")
+        if self.validate_and_set_error(self.invalid_length(value=self.party_state), "Party State needs 2 or more characters."):
             return
-        if self.invalid_length(value=self.large_img_txt):
-            self.label_error_state.configure(
-                text="Large Image Text needs 2 or more characters.")
+        if self.validate_and_set_error(self.invalid_length(value=self.large_img_txt), "Large Image Text needs 2 or more characters."):
+            return
+        if self.validate_and_set_error(self.invalid_length(value=self.small_img_txt), "Small Image Text needs 2 or more characters."):
             return
 
-        if self.invalid_length(value=self.small_img_txt):
-            self.label_error_state.configure(
-                text="Small Image Text needs 2 or more characters.")
-            return
-
+        # Validate party settings
         if self.party_min:
-            if not self.party_state:
-                self.label_error_state.configure(
-                    text="Party number needs a state.")
+            if self.validate_and_set_error(not self.party_state, "Party number needs a state."):
                 return
-            if not self.party_max:
-                self.label_error_state.configure(text="Max is required.")
+            if self.validate_and_set_error(not self.party_max, "Max is required."):
                 return
-            elif int(self.party_min) > int(self.party_max):
-                self.label_error_state.configure(
-                    text="Min must not exceed or equal Max")
-                self.party_min = 0
+            if self.validate_and_set_error(int(self.party_min) > int(self.party_max), "Min must not exceed Max"):
                 return
 
+        # Validate button settings
         if self.button_one_url:
-            button_one = {"url": self.button_one_url}
             if self.button_one_txt:
-                button_one["label"] = self.button_one_txt
-                self.buttons.append(button_one)
+                self.buttons.append(
+                    {"url": self.button_one_url, "label": self.button_one_txt})
             else:
-                self.label_error_state.configure(
-                    text="Button 1 needs a label.")
+                self.set_error("Button 1 needs a label.")
+                return
 
         if self.button_two_url:
-            button_two = {"url": self.button_one_url}
             if self.button_two_txt:
-                button_two["label"] = self.button_two_txt
-                self.buttons.append(button_two)
+                self.buttons.append(
+                    {"url": self.button_two_url, "label": self.button_two_txt})
             else:
-                self.label_error_state.configure(
-                    text="Button 2 needs a label.")
+                self.set_error("Button 2 needs a label.")
+                return
 
+        # Parse custom timestamp if selected in combobox
         if self.combobox_timestamp.get() == self.timestamp_list[4]:
             custom_timestamp = self.entry_custom_timestamp.get(
             ).strip().replace('\n', '\\n').replace('\r', '\\r')
@@ -365,114 +363,126 @@ class App(ctk.CTk):
                 try:
                     dt = datetime.strptime(
                         custom_timestamp, "%B %d, %Y %I:%M:%S %p")
-                    timestamp = int(time.mktime(dt.timetuple()))
-                    self.selected_timestamp = timestamp
+                    self.selected_timestamp = int(time.mktime(dt.timetuple()))
                 except ValueError:
-                    self.label_error_state.configure(
-                        text="Invalid custom timestamp.")
+                    self.set_error("Invalid custom timestamp.")
+                    return
 
+        # Validate URLs
+        urls_to_validate = {
+            "Large Image Url": self.large_img_url,
+            "Small Image Url": self.small_img_url,
+            "Button One Url": self.button_one_url,
+            "Button Two Url": self.button_two_url
+        }
+
+        for field_name, url in urls_to_validate.items():
+            if url and not is_valid_url(url):
+                self.set_error(f"Invalid {field_name}.")
+                return
+
+        # Prepare data for updating presence if connected
         if self.isConnected:
             update_kwargs = {}
             if self.details:
                 update_kwargs["details"] = self.details
             if self.party_state:
                 update_kwargs["state"] = self.party_state
-            if self.timestamp:
-                update_kwargs["start"] = self.timestamp
             if self.large_img_url and self.large_img_txt:
-                update_kwargs["large_image"] = (self.large_img_url)
+                update_kwargs["large_image"] = self.large_img_url
                 update_kwargs["large_text"] = self.large_img_txt
             if self.small_img_url and self.small_img_txt:
-                update_kwargs["small_image"] = (self.small_img_url)
+                update_kwargs["small_image"] = self.small_img_url
                 update_kwargs["small_text"] = self.small_img_txt
             if self.buttons:
                 update_kwargs["buttons"] = self.buttons
             if self.party_min and self.party_max:
-                party_size = [int(self.party_min), int(self.party_max)]
-                update_kwargs["party_size"] = party_size
+                update_kwargs["party_size"] = [
+                    int(self.party_min), int(self.party_max)]
             if self.selected_timestamp:
                 update_kwargs["start"] = self.selected_timestamp
             if update_kwargs:
+                # Call the update on the discord RPC
                 self.discord_rpc.update_presence(**update_kwargs)
                 self.update_timestamp = datetime.now().timestamp()
-                self.label_error_state.configure(text="")
-
-        else:
-            self.label_error_state.configure(text="No connection available.")
 
     def connect(self):
-
         self.client_id = self.entry_client_id.get()
 
-        if self.client_id:
-            success, res = self.discord_rpc.connect(self.client_id)
-            if success:
-                self.isConnected = True
-                self.label_connection_state.configure(text="Connected")
-                self.button_connect.configure(
-                    state="disabled", fg_color=STYLE["DISABLED"])
-                self.button_disconnect.configure(
-                    state="normal", fg_color=STYLE["NORMAL"])
-                self.button_update.configure(
-                    state="normal", fg_color=STYLE["NORMAL"])
-                self.label_error_state.configure(text="")
-            else:
-                self.label_error_state.configure(
-                    text=f"Connection Failed. {res.message}")
+        if self.validate_and_set_error(not self.client_id, "Client ID is required."):
+            return
+
+        success, res = self.discord_rpc.connect(self.client_id)
+        if success:
+            self.isConnected = True
+            self.label_connection_state.configure(text="Connected")
+            self.button_connect.configure(
+                state="disabled", fg_color=STYLE["DISABLED"])
+            self.button_disconnect.configure(
+                state="normal", fg_color=STYLE["NORMAL"])
+            self.button_update.configure(
+                state="normal", fg_color=STYLE["NORMAL"])
+            self.set_error("")
         else:
-            self.label_error_state.configure(text="No client id.")
+            self.set_error(f"Connection Failed. {res.message}")
 
     def disconnect(self):
-        if self.isConnected:
-            if self.discord_rpc.disconnect():
-                self.isConnected = False
-                self.label_connection_state.configure(text="Disconnected")
-                self.button_connect.configure(
-                    state="normal", fg_color=STYLE["NORMAL"])
-                self.button_disconnect.configure(
-                    state="disabled", fg_color=STYLE["DISABLED"])
-                self.button_update.configure(
-                    state="disabled", fg_color=STYLE["DISABLED"])
-                self.label_error_state.configure(text="")
+        if not self.isConnected:
+            return
+
+        if self.discord_rpc.disconnect():
+            self.isConnected = False
+            self.label_connection_state.configure(text="Disconnected")
+            self.button_connect.configure(
+                state="normal", fg_color=STYLE["NORMAL"])
+            self.button_disconnect.configure(
+                state="disabled", fg_color=STYLE["DISABLED"])
+            self.button_update.configure(
+                state="disabled", fg_color=STYLE["DISABLED"])
+            self.set_error("")
+
+    def combobox_timestamp_callback(self, choice):
+        if choice != self.timestamp_list[4]:
+            self.entry_custom_timestamp.configure(
+                state="disabled", fg_color=STYLE["ENTRY"])
+
+        timestamp_map = {
+            self.timestamp_list[1]: self.start_time,
+            self.timestamp_list[2]: self.update_timestamp,
+            self.timestamp_list[3]: datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            self.timestamp_list[0]: None
+        }
+
+        if choice in timestamp_map:
+            self.selected_timestamp = timestamp_map[choice]
+        elif choice == self.timestamp_list[4]:
+            self.entry_custom_timestamp.configure(
+                state="normal",
+                fg_color=STYLE["ENTRY"],
+                placeholder_text=datetime.now().strftime("%B %d, %Y %I:%M:%S %p")
+            )
+
+    def set_error(self, msg):
+        self.label_error_state.configure(
+            text=msg)
+
+    def validate_and_set_error(self, condition, error_message):
+        if condition:
+            self.set_error(error_message)
+            return True
+        return False
 
     def validate_integer(self, P):
         if P == "":
             return True
         try:
             value = int(P)
-            if value < 0:
-                return False
-            return True
+            return value >= 0
         except ValueError:
             return False
 
     def invalid_length(self, value):
-        if len(value) == 1:
-            return True
-        return False
-
-    def combobox_timestamp_callback(self, choice):
-
-        if choice != self.timestamp_list[4]:
-            self.entry_custom_timestamp.configure(
-                state="disabled", fg_color=STYLE["ENTRY"])
-
-        if choice == self.timestamp_list[1]:
-            self.selected_timestamp = self.start_time
-            return
-        elif choice == self.timestamp_list[2]:
-            self.selected_timestamp = self.update_timestamp
-            return
-        elif choice == self.timestamp_list[3]:
-            self.selected_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            return
-        elif choice == self.timestamp_list[4]:
-            self.entry_custom_timestamp.configure(state="normal", fg_color=STYLE["ENTRY"], placeholder_text=(
-                datetime.now().strftime("%B %d, %Y %I:%M:%S %p")))
-            return
-        elif choice == self.timestamp_list[0]:
-            self.selected_timestamp = None
-            return
+        return len(value) == 1
 
 
 if __name__ == "__main__":
