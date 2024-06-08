@@ -1,3 +1,4 @@
+# @1.0.0
 # @name: Genzai!
 # @author: Dino Paulo R. Gomez 2024
 
@@ -20,9 +21,14 @@ os.environ['XMODIFIERS'] = "@im=none"
 
 # App Constants
 CONFIG = {
-    "TITLE": "Genzai: Discord Rich Presence @dinogomez",
-    "DIMENSION": "520x480",
-
+    "VERSION": "1.0.0",
+    "AUTHOR": "Dino Paulo R. Gomez",
+    "APP_TITLE": f"Genzai: Discord Rich Presence",
+    "APP_ICON": "assets/icon.png",
+    "APP_LOGO": "assets/logo.png",
+    "APP_GEOMETRY": "520x480",
+    "APP_RESIZABLE": False,
+    "APP_DIMENSION": "520x480",
 }
 
 # Widget Coloring
@@ -96,8 +102,8 @@ class App(ctk.CTk):
 
         # App Configs
         ctk.set_default_color_theme("green")
-        self.title(CONFIG["TITLE"])
-        self.geometry(CONFIG["DIMENSION"])
+        self.title(CONFIG["APP_TITLE"])
+        self.geometry(CONFIG["APP_DIMENSION"])
         self.resizable(False, False)
 
         # App Main Frame [Frame]
