@@ -17,10 +17,10 @@ A lightweight Discord custom Rich Presence manager that runs on Linux and Window
 
 ### Latest [DOWNLOAD HERE](https://github.com/dinogomez/genzai/releases/tag/Latest)
 
-The latest official release of Genzai is available for both Linux and Windows. Check the [Genzai Latest Release](https://github.com/dinogomez/genzai/releases/tag/Latest).
+The latest official release of Genzai is available for both Linux and Windows. Check the [Genzai Latest Release](https://github.com/dinogomez/genzai/releases/latest).
 
-- [Download for Linux](https://github.com/dinogomez/genzai/releases/download/Latest/genzai_linux_1.0.1.zip)
-- [Download for Windows](https://github.com/dinogomez/genzai/releases/download/Latest/genzai_windows_1.0.1.zip)
+- [Download for Linux](https://github.com/dinogomez/genzai/releases/download/1.0.1/genzai_linux_1.0.1.zip)
+- [Download for Windows](https://github.com/dinogomez/genzai/releases/download/1.0.1/genzai_windows_1.0.1.zip)
 
 ## How to use Genzai?
 
