@@ -72,7 +72,11 @@ With `auto-py-to-exe`.
 With `pyinstaller`, refer to this [documentation](https://customtkinter.tomschimansky.com/documentation/packaging) when building customtkinter apps.
 
 ```bash
-pyinstaller --noconfirm --onedir --windowed --icon "<Genzai Location>/Genzai/assets/genzai.ico" --add-data "<CustomTkinter Location>/customtkinter:customtkinter/" --add-data "<Genzai Location>/Genzai/assets:assets/" --hidden-import "PIL._tkinter_finder"  "<Genzai Location>/Genzai/genzai.py"
+pyinstaller --noconfirm --onedir --windowed --icon "<Genzai Location>/Genzai/assets/genzai.ico" 
+--add-data "<CustomTkinter Location>/customtkinter:customtkinter/" 
+--add-data "<Genzai Location>/Genzai/assets:assets/" 
+--hidden-import "PIL._tkinter_finder"  
+"<Genzai Location>/Genzai/genzai.py"
 ```
 
 ## Contributing
