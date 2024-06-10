@@ -1,3 +1,9 @@
+<p align=center>
+  <a href="https://github.com/dinogomez/genzai/releases/latest"><img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/tag/dinogomez/genzai?color=343638&label=latest&logo=github"></a>
+  <a href="https://github.com/dinogomez/genzai/releases/latest"><img alt="GitHub Releases" src="https://img.shields.io/github/downloads/dinogomez/genzai/latest/total?color=343638&label=downloads&logo=github"></a>
+  <a href="https://github.com/dinogomez/genzai/releases/"><img alt="All GitHub Releases" src="https://img.shields.io/github/downloads/dinogomez/genzai/total?color=343638&label=total%20downloads&logo=github"></a>
+</p>
+
 # <img src=https://github.com/dinogomez/genzai/assets/41871666/0536940c-fa2d-4fda-9744-25edbc5ead14 style="height:1em;"/> Genzai : Discord Rich Presence
 
 ---
