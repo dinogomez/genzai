@@ -1,4 +1,4 @@
-# @1.0.1
+# @1.1.0
 # @name: Genzai!
 # @author: Dino Paulo R. Gomez 2024
 
@@ -9,6 +9,9 @@ from datetime import datetime
 import time
 import sys
 import os
+import json
+import glob
+
 from urllib.parse import urlparse
 
 # Dont really understand why, but it increases the render speed.
@@ -29,7 +32,8 @@ CONFIG = {
     "APP_GEOMETRY": "520x480",
     "APP_RESIZABLE_X": False,
     "APP_RESIZABLE_Y": False,
-    "APP_DIMENSION": "520x480",
+    "APP_DIMENSION": "520x520",
+    "APP_FONT": ("Consolas", 12)
 }
 
 # Widget Coloring
@@ -69,6 +73,15 @@ class DiscordRPC:
             self.RPC.connect()
             self.RPC.update(state="Launching Genzai 🚀",
                             details="A user is preparing his presence.", start=int(time.time()))
+            return True, None
+        except Exception as e:
+            return False, e
+
+    def test_connection(self, app_id):
+        try:
+            self.RPC = Presence(app_id)
+            self.RPC.connect()
+            self.RPC.close()
             return True, None
         except Exception as e:
             return False, e
@@ -114,65 +127,81 @@ class App(ctk.CTk):
         self.frame.grid_columnconfigure((0, 1), weight=1)
         self.frame.pack(padx=10, pady=10, fill="x")
 
+        # Config  [Label,Combobox, Button]@Grid
+        self.label_config = ctk.CTkLabel(
+            self.frame, text="Config", font=CONFIG["APP_FONT"])
+        self.label_config.grid(row=0, column=0, padx=5, pady=5)
+        self.config_list = []
+        self.combobox_config = ctk.CTkComboBox(
+            self.frame, values=self.config_list, command=self.combobox_config_callback)
+        self.combobox_config.grid(
+            row=0, column=1, columnspan=4, padx=5, pady=10, sticky="ew")
+
+        self.combobox_config.set("Select Config")
+
+        self.button_config = ctk.CTkButton(self.frame,  text="Save Config", font=(
+            "Consolas", 12), command=self.save_config, width=110)
+        self.button_config.grid(row=0, column=5, padx=3, sticky="we")
+
         # App [Label,Entry]@Grid
         self.label_app_id = ctk.CTkLabel(
-            self.frame, text="App ID", font=("Consolas", 12))
-        self.label_app_id.grid(row=0, column=0, padx=5, pady=5)
+            self.frame, text="App ID", font=CONFIG["APP_FONT"])
+        self.label_app_id.grid(row=1, column=0, padx=5, pady=5)
 
         self.entry_app_id = ctk.CTkEntry(self.frame)
         self.entry_app_id.grid(
-            row=0, column=1, columnspan=3, padx=5, pady=5, sticky="we")
+            row=1, column=1, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Connect [Button:connect()]@Grid
         self.button_connect = ctk.CTkButton(self.frame, text="Connect", font=(
             "Consolas", 12), command=self.connect, width=110)
-        self.button_connect.grid(row=0, column=4, padx=3, sticky="w")
+        self.button_connect.grid(row=1, column=4, padx=3, sticky="w")
 
         # Disconnect [Button:disconnect()]@Grid
         self.button_disconnect = ctk.CTkButton(self.frame, state="disabled", text="Disconnect", fg_color=STYLE["DISABLED"], font=(
             "Consolas", 12), command=self.disconnect, width=110)
-        self.button_disconnect.grid(row=0, column=5, padx=3, sticky="we")
+        self.button_disconnect.grid(row=1, column=5, padx=3, sticky="we")
 
         # Details [Label,Entry]@Grid
         self.label_details = ctk.CTkLabel(
-            self.frame, text="Details", font=("Consolas", 12))
-        self.label_details.grid(row=1, column=0, padx=5, pady=5)
+            self.frame, text="Details", font=CONFIG["APP_FONT"])
+        self.label_details.grid(row=2, column=0, padx=5, pady=5)
 
         self.entry_details = ctk.CTkEntry(self.frame)
         self.entry_details.grid(
-            row=1, column=1, columnspan=5, padx=5, pady=5, sticky="ew")
+            row=2, column=1, columnspan=5, padx=5, pady=5, sticky="ew")
 
         # Party State [Label, Entry]@Grid
         self.label_party_state = ctk.CTkLabel(
-            self.frame, text="State", font=("Consolas", 12))
-        self.label_party_state.grid(row=2, column=0, padx=5, pady=5)
+            self.frame, text="State", font=CONFIG["APP_FONT"])
+        self.label_party_state.grid(row=3, column=0, padx=5, pady=5)
 
         self.entry_party_state = ctk.CTkEntry(self.frame)
-        self.entry_party_state.grid(row=2, column=1, columnspan=2,
+        self.entry_party_state.grid(row=3, column=1, columnspan=2,
                                     padx=5, pady=5, sticky="we")
 
         # Party [Label]@Grid
         self.label_party = ctk.CTkLabel(
-            self.frame, text="Party", font=("Consolas", 12), width=5)
-        self.label_party.grid(row=2, column=3, padx=5, pady=5, sticky="w")
+            self.frame, text="Party", font=CONFIG["APP_FONT"], width=5)
+        self.label_party.grid(row=3, column=3, padx=5, pady=5, sticky="w")
 
         # Party Min [Entry:validate_integer()]@Grid
         self.vcmd = (self.register(self.validate_integer), '%P')
         self.entry_party_min = ctk.CTkEntry(
             self.frame, validate="key", validatecommand=self.vcmd, width=90, placeholder_text=0)
         self.entry_party_min.grid(
-            row=2, column=4, padx=(5, 25), pady=5, sticky="we")
+            row=3, column=4, padx=(5, 25), pady=5, sticky="we")
 
         # Party Separator [Label]@Grid
         self.separator_label = ctk.CTkLabel(
-            self.frame, text="of", font=("Consolas", 12))
-        self.separator_label.grid(row=2, column=4, padx=5, pady=5, sticky="e")
+            self.frame, text="of", font=CONFIG["APP_FONT"])
+        self.separator_label.grid(row=3, column=4, padx=5, pady=5, sticky="e")
 
         # Party Max [Entry:validate_integer()]@Grid
         self.vcmd = (self.register(self.validate_integer), '%P')
         self.entry_party_max = ctk.CTkEntry(
             self.frame, validate="key", validatecommand=self.vcmd, width=10, placeholder_text=1)
-        self.entry_party_max.grid(row=2, column=5, padx=5, pady=5, sticky="we")
+        self.entry_party_max.grid(row=3, column=5, padx=5, pady=5, sticky="we")
 
         # Timestamp Dropdown Content
         self.timestamp_list = ["None", "Start Time",
@@ -180,8 +209,8 @@ class App(ctk.CTk):
 
         # Timestamp [Label, Combobox]@Grid
         self.label_timestamp = ctk.CTkLabel(
-            self.frame, text="Timestamp", font=("Consolas", 12))
-        self.label_timestamp.grid(row=3, column=0, padx=5, pady=5)
+            self.frame, text="Timestamp", font=CONFIG["APP_FONT"])
+        self.label_timestamp.grid(row=4, column=0, padx=5, pady=5)
 
         self.combobox_var = ctk.StringVar(
             value=self.timestamp_list[1])  # set initial value
@@ -191,119 +220,207 @@ class App(ctk.CTk):
                                                   variable=self.combobox_var
                                                   )
         self.combobox_timestamp.grid(
-            row=3, column=1, columnspan=2, padx=5, pady=5, sticky="we")
+            row=4, column=1, columnspan=2, padx=5, pady=5, sticky="we")
 
         # Custom Timestamp [Label,Entry]@Grid
         self.label_custom_timestamp = ctk.CTkLabel(
-            self.frame, text="Custom", font=("Consolas", 12), width=5)
+            self.frame, text="Custom", font=CONFIG["APP_FONT"], width=5)
         self.label_custom_timestamp.grid(
-            row=3, column=3, padx=5, pady=5, sticky="w")
+            row=4, column=3, padx=5, pady=5, sticky="w")
 
         self.entry_custom_timestamp = ctk.CTkEntry(
             self.frame, validate="key", state="disabled", fg_color=STYLE["ENTRY"])
         self.entry_custom_timestamp.grid(
-            row=3, column=4, columnspan=3, padx=5, pady=5, sticky="we")
+            row=4, column=4, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Large Image [Label]@Grid
         self.label_large_image = ctk.CTkLabel(
-            self.frame, text="Large Image", font=("Consolas", 12))
+            self.frame, text="Large Image", font=CONFIG["APP_FONT"])
         self.label_large_image.grid(
-            row=6, column=1, padx=5, pady=5, sticky="w")
+            row=7, column=1, padx=5, pady=5, sticky="w")
 
         # Large Image URL [Entry]@Grid
         self.entry_large_image_url = ctk.CTkEntry(self.frame)
         self.entry_large_image_url.grid(
-            row=7, column=1, columnspan=3, padx=5, pady=5, sticky="we")
+            row=8, column=1, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Large Image Text [Entry]@Grid
         self.entry_large_image_text = ctk.CTkEntry(self.frame)
         self.entry_large_image_text.grid(
-            row=8, column=1, columnspan=3, padx=5, pady=5, sticky="we")
+            row=9, column=1, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Small Image [Label]@Grid
         self.label_small_image = ctk.CTkLabel(
-            self.frame, text="Small Image", font=("Consolas", 12))
+            self.frame, text="Small Image", font=CONFIG["APP_FONT"])
         self.label_small_image.grid(
-            row=6, column=4, padx=5, pady=5, sticky="w")
+            row=7, column=4, padx=5, pady=5, sticky="w")
 
         # Small Image Url [Entry]@Grid
         self.entry_small_image_url = ctk.CTkEntry(self.frame)
         self.entry_small_image_url.grid(
-            row=7, column=4, columnspan=3, padx=5, pady=5, sticky="we")
+            row=8, column=4, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Small Image Text [Entry]@Grid
         self.entry_small_image_text = ctk.CTkEntry(self.frame)
         self.entry_small_image_text.grid(
-            row=8, column=4, columnspan=3, padx=5, pady=5, sticky="we")
+            row=9, column=4, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Image URL [Label]@Grid
         self.label_image_url = ctk.CTkLabel(
-            self.frame, text="URL", font=("Consolas", 12))
-        self.label_image_url.grid(row=7, column=0, padx=5, pady=5)
+            self.frame, text="URL", font=CONFIG["APP_FONT"])
+        self.label_image_url.grid(row=8, column=0, padx=5, pady=5)
 
         # Image Text [Label]@Grid
         self.label_image_text = ctk.CTkLabel(
-            self.frame, text="Text", font=("Consolas", 12))
-        self.label_image_text.grid(row=8, column=0, padx=5, pady=5)
+            self.frame, text="Text", font=CONFIG["APP_FONT"])
+        self.label_image_text.grid(row=9, column=0, padx=5, pady=5)
 
         # Button 1 [Label]@Grid
         self.label_button_one = ctk.CTkLabel(
-            self.frame, text="Button 1", font=("Consolas", 12))
-        self.label_button_one.grid(row=9, column=1, padx=5, pady=5, sticky="w")
+            self.frame, text="Button 1", font=CONFIG["APP_FONT"])
+        self.label_button_one.grid(
+            row=10, column=1, padx=5, pady=5, sticky="w")
 
         # Button 1 Url [Entry]@Grid
         self.entry_button_one_url = ctk.CTkEntry(self.frame)
         self.entry_button_one_url.grid(
-            row=10, column=1, columnspan=3, padx=5, pady=5, sticky="we")
+            row=11, column=1, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Button 1 Text [Entry]@Grid
         self.entry_button_one_text = ctk.CTkEntry(self.frame)
         self.entry_button_one_text.grid(
-            row=11, column=1, columnspan=3, padx=5, pady=5, sticky="we")
+            row=12, column=1, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Button 2 [Label]@Grid
         self.label_button_two = ctk.CTkLabel(
-            self.frame, text="Button 2", font=("Consolas", 12))
-        self.label_button_two.grid(row=9, column=4, padx=5, pady=5, sticky="w")
+            self.frame, text="Button 2", font=CONFIG["APP_FONT"])
+        self.label_button_two.grid(
+            row=10, column=4, padx=5, pady=5, sticky="w")
 
         # Button 2 Url [Entry]@Grid
         self.entry_button_two_url = ctk.CTkEntry(self.frame)
         self.entry_button_two_url.grid(
-            row=10, column=4, columnspan=3, padx=5, pady=5, sticky="we")
+            row=11, column=4, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Button 2 Text [Entry]@Grid
         self.entry_button_two_text = ctk.CTkEntry(self.frame)
         self.entry_button_two_text.grid(
-            row=11, column=4, columnspan=3, padx=5, pady=5, sticky="we")
+            row=12, column=4, columnspan=3, padx=5, pady=5, sticky="we")
 
         # Button URL [Label]@Grid
         self.label_button_url = ctk.CTkLabel(
-            self.frame, text="URL", font=("Consolas", 12))
-        self.label_button_url.grid(row=10, column=0, padx=5, pady=5)
+            self.frame, text="URL", font=CONFIG["APP_FONT"])
+        self.label_button_url.grid(row=11, column=0, padx=5, pady=5)
 
         # Button Text [Label]@Grid
         self.label_button_text = ctk.CTkLabel(
-            self.frame, text="TEXT", font=("Consolas", 12))
-        self.label_button_text.grid(row=11, column=0, padx=5, pady=5)
+            self.frame, text="TEXT", font=CONFIG["APP_FONT"])
+        self.label_button_text.grid(row=12, column=0, padx=5, pady=5)
 
         # Update Presence [Button:update()]@Grid
         self.button_update = ctk.CTkButton(self.frame, state="disabled", fg_color=STYLE["DISABLED"], text="Update Presence", font=(
             "Consolas", 12), border_width=1, command=self.update)
         self.button_update.grid(
-            row=12, column=0, columnspan=6, padx=5, pady=10, sticky="ew")
+            row=13, column=0, columnspan=6, padx=5, pady=10, sticky="ew")
 
         # Connection State [Label]@Pack
         self.label_connection_state = ctk.CTkLabel(
-            master=self, text="Disconnected", font=("Consolas", 12),)
+            master=self, text="Disconnected", font=CONFIG["APP_FONT"],)
         self.label_connection_state.pack(padx=15, pady=(0, 5), side="right")
 
         # Error State [Label]@Pack
         self.label_app_state = ctk.CTkLabel(
-            master=self, text="", font=("Consolas", 12),)
+            master=self, text="", font=CONFIG["APP_FONT"],)
         self.label_app_state.pack(pady=(0, 5), padx=15, side="left")
 
         # Vars
         self.isConnected = False
+        self.config_init()
+
+    def combobox_config_callback(self, choice):
+        print("combobox dropdown clicked:", choice)
+
+        file_path = os.path.join(os.getcwd(), choice)
+
+        if not os.path.exists(file_path):
+            self.set_app_label(f"Config file {choice} not found.", "red")
+            return
+
+        try:
+            with open(file_path, 'r') as f:
+                config_data = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            self.set_app_label("Error reading config file.", "red")
+            return
+
+        entry_fields = {
+            "app_id": self.entry_app_id,
+            "details": self.entry_details,
+            "party_state": self.entry_party_state,
+            "party_min": self.entry_party_min,
+            "party_max": self.entry_party_max,
+            "large_image_url": self.entry_large_image_url,
+            "large_image_text": self.entry_large_image_text,
+            "small_image_url": self.entry_small_image_url,
+            "small_image_text": self.entry_small_image_text,
+            "button_one_url": self.entry_button_one_url,
+            "button_one_text": self.entry_button_one_text,
+            "button_two_url": self.entry_button_two_url,
+            "button_two_text": self.entry_button_two_text
+        }
+
+        for key, field in entry_fields.items():
+            value = config_data.get(key, "")
+            field.delete(0, ctk.END)
+            field.insert(0, value)
+
+        self.set_app_label(f"Loaded configuration {choice}.", "green")
+
+    def config_init(self):
+        current_directory = os.getcwd()
+        pattern = os.path.join(current_directory, 'config_*.json')
+        file_paths = glob.glob(pattern)
+
+        if not file_paths:
+            self.validate_and_set_app_label(True, "No config file loaded.")
+        else:
+            self.config_list.extend(os.path.basename(file_path)
+                                    for file_path in file_paths)
+            self.set_app_label(f"Loaded {len(file_paths)} configs.", "white")
+            self.combobox_config.configure(values=self.config_list)
+
+    def save_config(self):
+        if not self.discord_rpc.test_connection(self.entry_app_id.get()):
+            self.set_app_label("A valid application id is required.", "red")
+            return
+
+        print("Saving config...")
+        config_data = {
+            "app_id": self.entry_app_id.get(),
+            "details": self.entry_details.get(),
+            "party_state": self.entry_party_state.get(),
+            "party_min": self.entry_party_min.get(),
+            "party_max": self.entry_party_max.get(),
+            "large_image_url": self.entry_large_image_url.get(),
+            "large_image_text": self.entry_large_image_text.get(),
+            "small_image_url": self.entry_small_image_url.get(),
+            "small_image_text": self.entry_small_image_text.get(),
+            "button_one_url": self.entry_button_one_url.get(),
+            "button_one_text": self.entry_button_one_text.get(),
+            "button_two_url": self.entry_button_two_url.get(),
+            "button_two_text": self.entry_button_two_text.get()
+        }
+
+        # Filter out empty values
+        config_data = {k: v for k, v in config_data.items() if v}
+
+        file_name = f"config_{config_data['app_id']}.json"
+        with open(file_name, 'w') as f:
+            json.dump(config_data, f, indent=4)
+
+        self.config_list.append(file_name)
+        self.combobox_config.configure(values=self.config_list)
+        self.set_app_label("Configuration saved successfully.", "green")
 
     def update(self):
 
@@ -447,6 +564,7 @@ class App(ctk.CTk):
                 state="normal", fg_color=STYLE["NORMAL"])
             # Clear any previous error messages
             self.set_app_label("")
+            return True
         else:
             # If connection fails, display the error message
             self.set_app_label(f"Connection Failed. {res.message}")
