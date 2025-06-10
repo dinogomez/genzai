@@ -33,7 +33,7 @@ jobs:
         Compress-Archive -Path "dist/genzai-presence-windows/*" -DestinationPath "genzai-presence-windows.zip"
     
     - name: Upload Windows artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-build
         path: genzai-presence-windows.zip
@@ -70,7 +70,7 @@ jobs:
         tar -czf ../genzai-presence-linux.tar.gz genzai-presence-linux/
     
     - name: Upload Linux artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: linux-build
         path: genzai-presence-linux.tar.gz
@@ -102,7 +102,7 @@ jobs:
         tar -czf ../genzai-presence-macos.tar.gz genzai-presence-macos/
     
     - name: Upload macOS artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: macos-build
         path: genzai-presence-macos.tar.gz
@@ -116,19 +116,19 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Download Windows build
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: windows-build
         path: ./artifacts/
     
     - name: Download Linux build
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: linux-build
         path: ./artifacts/
     
     - name: Download macOS build
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: macos-build
         path: ./artifacts/
