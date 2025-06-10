@@ -21,12 +21,29 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pyinstaller
+        if (Test-Path "requirements.txt") {
+          pip install -r requirements.txt
+        } elseif (Test-Path "genzai/requirements.txt") {
+          pip install -r genzai/requirements.txt
+        } else {
+          pip install customtkinter pypresence Pillow
+        }
+    
+    - name: List files for debugging
+      run: |
+        echo "Files in repository:"
+        Get-ChildItem -Recurse -Name
     
     - name: Build Windows executable
       run: |
-        pyinstaller --noconfirm --onedir --windowed --icon "assets/genzai.ico" --add-data "assets;assets/" --hidden-import "PIL._tkinter_finder" --name "genzai-presence-windows" genzai.py
+        $mainFile = if (Test-Path "genzai/genzai.py") { "genzai/genzai.py" } elseif (Test-Path "genzai/main.py") { "genzai/main.py" } else { Get-ChildItem -Path "genzai" -Filter "*.py" | Select-Object -First 1 -ExpandProperty FullName }
+        $iconPath = if (Test-Path "genzai/assets/genzai.ico") { "--icon `"genzai/assets/genzai.ico`"" } elseif (Test-Path "assets/genzai.ico") { "--icon `"assets/genzai.ico`"" } else { "" }
+        $assetsPath = if (Test-Path "genzai/assets") { "--add-data `"genzai/assets;assets/`"" } elseif (Test-Path "assets") { "--add-data `"assets;assets/`"" } else { "" }
+        
+        $command = "pyinstaller --noconfirm --onedir --windowed $iconPath $assetsPath --hidden-import `"PIL._tkinter_finder`" --name `"genzai-presence-windows`" $mainFile"
+        echo "Running: $command"
+        Invoke-Expression $command
     
     - name: Create Windows archive
       run: |
@@ -57,12 +74,27 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pyinstaller
+        if [ -f "requirements.txt" ]; then
+          pip install -r requirements.txt
+        elif [ -f "genzai/requirements.txt" ]; then
+          pip install -r genzai/requirements.txt
+        else
+          pip install customtkinter pypresence Pillow
+        fi
+    
+    - name: List files for debugging
+      run: |
+        echo "Files in repository:"
+        find . -type f -name "*.py" -o -name "*.txt" -o -name "*.ico" | head -20
     
     - name: Build Linux executable
       run: |
-        pyinstaller --noconfirm --onedir --windowed --add-data "assets:assets/" --hidden-import "PIL._tkinter_finder" --name "genzai-presence-linux" genzai.py
+        MAIN_FILE=$([ -f "genzai/genzai.py" ] && echo "genzai/genzai.py" || ([ -f "genzai/main.py" ] && echo "genzai/main.py" || find ./genzai -name "*.py" -type f | head -1))
+        ASSETS_PATH=$([ -d "genzai/assets" ] && echo "--add-data genzai/assets:assets/" || ([ -d "assets" ] && echo "--add-data assets:assets/" || echo ""))
+        
+        echo "Building with main file: $MAIN_FILE"
+        pyinstaller --noconfirm --onedir --windowed $ASSETS_PATH --hidden-import "PIL._tkinter_finder" --name "genzai-presence-linux" "$MAIN_FILE"
     
     - name: Create Linux archive
       run: |
@@ -89,12 +121,27 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pyinstaller
+        if [ -f "requirements.txt" ]; then
+          pip install -r requirements.txt
+        elif [ -f "genzai/requirements.txt" ]; then
+          pip install -r genzai/requirements.txt
+        else
+          pip install customtkinter pypresence Pillow
+        fi
+    
+    - name: List files for debugging
+      run: |
+        echo "Files in repository:"
+        find . -type f -name "*.py" -o -name "*.txt" -o -name "*.ico" | head -20
     
     - name: Build macOS executable
       run: |
-        pyinstaller --noconfirm --onedir --windowed --add-data "assets:assets/" --hidden-import "PIL._tkinter_finder" --name "genzai-presence-macos" genzai.py
+        MAIN_FILE=$([ -f "genzai/genzai.py" ] && echo "genzai/genzai.py" || ([ -f "genzai/main.py" ] && echo "genzai/main.py" || find ./genzai -name "*.py" -type f | head -1))
+        ASSETS_PATH=$([ -d "genzai/assets" ] && echo "--add-data genzai/assets:assets/" || ([ -d "assets" ] && echo "--add-data assets:assets/" || echo ""))
+        
+        echo "Building with main file: $MAIN_FILE"
+        pyinstaller --noconfirm --onedir --windowed $ASSETS_PATH --hidden-import "PIL._tkinter_finder" --name "genzai-presence-macos" "$MAIN_FILE"
     
     - name: Create macOS archive
       run: |
