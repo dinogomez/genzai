@@ -1,0 +1,167 @@
+name: Build and Release Genzai Presence
+
+on:
+  push:
+    tags:
+      - 'v*'  # Déclenche sur les tags version (ex: v1.0.0, v1.2.3)
+  workflow_dispatch:  # Permet de déclencher manuellement
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Windows executable
+      run: |
+        pyinstaller --noconfirm --onedir --windowed --icon "assets/genzai.ico" --add-data "assets;assets/" --hidden-import "PIL._tkinter_finder" --name "genzai-presence-windows" genzai.py
+    
+    - name: Create Windows archive
+      run: |
+        Compress-Archive -Path "dist/genzai-presence-windows/*" -DestinationPath "genzai-presence-windows.zip"
+    
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-build
+        path: genzai-presence-windows.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-tk
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Linux executable
+      run: |
+        pyinstaller --noconfirm --onedir --windowed --add-data "assets:assets/" --hidden-import "PIL._tkinter_finder" --name "genzai-presence-linux" genzai.py
+    
+    - name: Create Linux archive
+      run: |
+        cd dist
+        tar -czf ../genzai-presence-linux.tar.gz genzai-presence-linux/
+    
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-build
+        path: genzai-presence-linux.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build macOS executable
+      run: |
+        pyinstaller --noconfirm --onedir --windowed --add-data "assets:assets/" --hidden-import "PIL._tkinter_finder" --name "genzai-presence-macos" genzai.py
+    
+    - name: Create macOS archive
+      run: |
+        cd dist
+        tar -czf ../genzai-presence-macos.tar.gz genzai-presence-macos/
+    
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-build
+        path: genzai-presence-macos.tar.gz
+
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download Windows build
+      uses: actions/download-artifact@v3
+      with:
+        name: windows-build
+        path: ./artifacts/
+    
+    - name: Download Linux build
+      uses: actions/download-artifact@v3
+      with:
+        name: linux-build
+        path: ./artifacts/
+    
+    - name: Download macOS build
+      uses: actions/download-artifact@v3
+      with:
+        name: macos-build
+        path: ./artifacts/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## Genzai Presence ${{ github.ref_name }}
+          
+          A lightweight custom Discord Rich Presence manager.
+          
+          ### Downloads:
+          - **Windows**: `genzai-presence-windows.zip`
+          - **Linux**: `genzai-presence-linux.tar.gz`
+          - **macOS**: `genzai-presence-macos.tar.gz`
+          
+          ### Installation:
+          1. Download the appropriate file for your OS
+          2. Extract the archive
+          3. Run the executable inside the extracted folder
+          
+          ### Usage:
+          1. Create a Discord application in the [Discord Developer Portal](https://discord.com/developers/applications)
+          2. Copy the Application ID and paste it in the App ID field
+          3. Click Connect and fill out your presence details
+          4. Enjoy your custom Discord Rich Presence!
+        files: |
+          ./artifacts/genzai-presence-windows.zip
+          ./artifacts/genzai-presence-linux.tar.gz
+          ./artifacts/genzai-presence-macos.tar.gz
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
