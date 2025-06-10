@@ -1,32 +1,27 @@
 # @1.1.0
 # @name: Genzai!
-# @author: Dino Paulo R. Gomez 2024
+# @author: Selunik 2025
 
-from pypresence import Presence
-from PIL import ImageTk
-import customtkinter as ctk
-from datetime import datetime
-import time
-import sys
 import os
+import sys
+import time
 import json
 import glob
-
+from datetime import datetime
 from urllib.parse import urlparse
 
-# Dont really understand why, but it increases the render speed.
-# Caught ibus to be getting most of the cpu% so quick read
-# through github leads me to this fix.
+import customtkinter as ctk
+from PIL import ImageTk
+from pypresence import Presence
 
-# disable input methods to improve speed
-# @https://github.com/ibus/ibus/issues/2324#issuecomment-996449177
-os.environ['XMODIFIERS'] = "@im=none"
+# Optimisation : désactiver les méthodes d'entrée pour accélérer le rendu
+os.environ['XMODIFIERS'] = '@im=none'
 
-# App Constants
+# Constantes de configuration et de style
 CONFIG = {
     "VERSION": "1.0.0",
-    "AUTHOR": "Dino Paulo R. Gomez",
-    "APP_TITLE": f"Genzai: Discord Rich Presence",
+    "AUTHOR": "Selunik",
+    "APP_TITLE": "Genzai: Discord Rich Presence",
     "APP_ICON": "assets/icon.png",
     "APP_LOGO": "assets/logo.png",
     "APP_GEOMETRY": "520x480",
@@ -36,7 +31,6 @@ CONFIG = {
     "APP_FONT": ("Consolas", 12)
 }
 
-# Widget Coloring
 STYLE = {
     "NORMAL": "#2fa572",
     "DISABLED": "#0e5637",
@@ -617,32 +611,38 @@ class App(ctk.CTk):
                     "%B %d, %Y %I:%M:%S %p")  # Set placeholder to current time
             )
 
-    def set_app_label(self, msg, color=STYLE["ERROR"]):
-        # Display an error message in the label
-        self.label_app_state
-        self.label_app_state.configure(
-            text=msg, text_color=color)
+    def set_app_label(self, msg, color=None):
+        """Affiche un message dans le label d'état de l'application."""
+        if color is None:
+            color = STYLE["ERROR"]
+        self.label_app_state.configure(text=msg, text_color=color)
 
     def validate_and_set_app_label(self, condition, error_message):
-        # Set error message if condition is true and return True, otherwise return False
+        """Affiche un message d'erreur si la condition est vraie."""
         if condition:
             self.set_app_label(error_message)
             return True
         return False
 
     def validate_integer(self, P):
-        # Check if the input string P is a valid non-negative integer
+        """Vérifie si la chaîne P est un entier non négatif ou vide."""
         if P == "":
             return True
-        try:
-            value = int(P)
-            return value >= 0
-        except ValueError:
-            return False
+        return P.isdigit() and int(P) >= 0
 
     def invalid_length(self, value):
-        # Check if the length of the input string value is exactly 1
-        return len(value) == 1
+        """Vérifie si la chaîne a une longueur inférieure à 2."""
+        return len(value) < 2
+
+    def create_label(self, parent, text, row, column, **kwargs):
+        label = ctk.CTkLabel(parent, text=text, font=CONFIG["APP_FONT"], **kwargs)
+        label.grid(row=row, column=column, padx=5, pady=5, sticky=kwargs.get("sticky", "w"))
+        return label
+
+    def create_entry(self, parent, row, column, **kwargs):
+        entry = ctk.CTkEntry(parent, **kwargs)
+        entry.grid(row=row, column=column, padx=5, pady=5, sticky=kwargs.get("sticky", "we"))
+        return entry
 
 
 if __name__ == "__main__":
